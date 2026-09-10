@@ -1,0 +1,177 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/mock_data.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _activeCategory = 'All';
+  final List<String> _recentSearches = [
+    'Flutter 3D Design',
+    'Sophia Martinez',
+    'MacBook Pro Marketplace',
+    'KC Tech Summit',
+  ];
+
+  final List<String> _categories = [
+    'All',
+    'People',
+    'Posts',
+    'Groups',
+    'Pages',
+    'Videos',
+    'Marketplace',
+    'Events',
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final query = _searchController.text.trim().toLowerCase();
+
+    final matchingUsers = MockData.users.where((u) => u.name.toLowerCase().contains(query)).toList();
+    final matchingPosts = MockData.initialPosts.where((p) => p.content.toLowerCase().contains(query)).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          onChanged: (val) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: 'Search Connecta...',
+            border: InputBorder.none,
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: _categories.map((cat) {
+                final isSelected = cat == _activeCategory;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(cat),
+                    selected: isSelected,
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : null,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onSelected: (_) => setState(() => _activeCategory = cat),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const Divider(height: 1),
+
+          // Search Body
+          Expanded(
+            child: query.isEmpty
+                ? _buildRecentSearches(theme)
+                : _buildSearchResults(theme, matchingUsers, matchingPosts),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Recent Searches', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            TextButton(
+              onPressed: () {
+                setState(() => _recentSearches.clear());
+              },
+              child: const Text('Clear All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ..._recentSearches.map(
+          (s) => ListTile(
+            leading: const Icon(Icons.history, color: Colors.grey),
+            title: Text(s),
+            trailing: const Icon(Icons.north_west, size: 16, color: Colors.grey),
+            onTap: () {
+              _searchController.text = s;
+              setState(() {});
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults(ThemeData theme, List matchingUsers, List matchingPosts) {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        if (_activeCategory == 'All' || _activeCategory == 'People') ...[
+          const Text('People', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...matchingUsers.map((u) => ListTile(
+                leading: CircleAvatar(backgroundImage: NetworkImage(u.avatarUrl)),
+                title: Text(u.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('@${u.username} • ${u.mutualFriendsCount} mutual friends'),
+                trailing: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('View Profile'),
+                ),
+              )),
+          const SizedBox(height: 16),
+        ],
+        if (_activeCategory == 'All' || _activeCategory == 'Posts') ...[
+          const Text('Posts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...matchingPosts.map((p) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: CircleAvatar(backgroundImage: NetworkImage(p.authorAvatar)),
+                  title: Text(p.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(p.content, maxLines: 2, overflow: TextOverflow.ellipsis),
+                ),
+              )),
+        ],
+      ],
+    );
+  }
+}

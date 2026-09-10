@@ -1,0 +1,39 @@
+﻿# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Secrets
+.env
+.env.local
+*.pem
+
+# Database & Storage
+*.sqlite3
+*.db
+media/
+staticfiles/
+
+# Node & Frontend
+node_modules/
+.next/
+out/
+dist/
+build/
+.npm
+*.log
+
+# Flutter & Dart
+.dart_tool/
+.fvm/
+.pub-cache/
+.pub/
+build/
+ios/Pods/
+*.xcodeproj
+
+# IDEs & System
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
