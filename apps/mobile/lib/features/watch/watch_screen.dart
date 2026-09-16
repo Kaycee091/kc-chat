@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 
 class WatchScreen extends StatefulWidget {
   const WatchScreen({super.key});
@@ -10,6 +11,8 @@ class WatchScreen extends StatefulWidget {
 
 class _WatchScreenState extends State<WatchScreen> {
   String _selectedCategory = 'Trending';
+  final Set<int> _followedCreators = {};
+  final Set<int> _playingVideos = {};
 
   final List<String> _categories = ['Trending', 'Gaming', 'Tech', 'Entertainment', 'Shorts/Reels'];
 
@@ -54,24 +57,40 @@ class _WatchScreenState extends State<WatchScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Video Player Container
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                            child: Image.network(
-                              'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80',
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (_playingVideos.contains(index)) {
+                              _playingVideos.remove(index);
+                            } else {
+                              _playingVideos.add(index);
+                            }
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(_playingVideos.contains(index) ? 'Streaming video #${index + 1}...' : 'Paused video')),
+                          );
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const SafeNetworkImage(
+                              imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80',
                               height: 220,
                               width: double.infinity,
                               fit: BoxFit.cover,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                             ),
-                          ),
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.black.withOpacity(0.6),
-                            child: const Icon(Icons.play_arrow, size: 36, color: Colors.white),
-                          ),
-                        ],
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Colors.black.withValues(alpha: 0.6),
+                              child: Icon(
+                                _playingVideos.contains(index) ? Icons.pause : Icons.play_arrow,
+                                size: 36,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -90,15 +109,34 @@ class _WatchScreenState extends State<WatchScreen> {
                               children: [
                                 const Row(
                                   children: [
-                                    CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400')),
+                                    SafeAvatar(
+                                      radius: 14,
+                                      imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+                                      name: 'KC Tech Media',
+                                    ),
                                     SizedBox(width: 8),
                                     Text('KC Tech Media', style: TextStyle(fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                                 ElevatedButton(
-                                  onPressed: () {},
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                                  child: const Text('Follow Creator'),
+                                  onPressed: () {
+                                    final isFollowed = _followedCreators.contains(index);
+                                    setState(() {
+                                      if (isFollowed) {
+                                        _followedCreators.remove(index);
+                                      } else {
+                                        _followedCreators.add(index);
+                                      }
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(isFollowed ? 'Unfollowed KC Tech Media' : 'Following KC Tech Media!')),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _followedCreators.contains(index) ? Colors.grey.shade400 : AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text(_followedCreators.contains(index) ? 'Following' : 'Follow Creator'),
                                 ),
                               ],
                             ),

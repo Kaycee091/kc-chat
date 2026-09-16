@@ -4,17 +4,28 @@ import '../models/story_model.dart';
 import '../models/marketplace_model.dart';
 import '../models/social_models.dart';
 import '../core/utils/mock_data.dart';
+import '../core/network/api_client.dart';
+import '../core/storage/storage_service.dart';
+import 'auth_provider.dart';
 
 class SocialProvider with ChangeNotifier {
-  List<Post> _posts = List.from(MockData.initialPosts);
-  List<Story> _stories = List.from(MockData.initialStories);
-  List<MarketplaceItem> _marketplaceItems = List.from(MockData.initialMarketplaceItems);
-  List<GroupModel> _groups = List.from(MockData.initialGroups);
-  List<EventModel> _events = List.from(MockData.initialEvents);
+  final ApiClient _apiClient;
+  final StorageService _storageService;
+
+  final List<Post> _posts = List.from(MockData.initialPosts);
+  final List<Story> _stories = List.from(MockData.initialStories);
+  final List<MarketplaceItem> _marketplaceItems = List.from(MockData.initialMarketplaceItems);
+  final List<GroupModel> _groups = List.from(MockData.initialGroups);
+  final List<EventModel> _events = List.from(MockData.initialEvents);
+  final Set<String> _sentFriendRequestUserIds = {};
   
   String _activeFeedTab = 'all'; // 'all', 'following', 'latest', 'friends'
   String _searchQuery = '';
   String _selectedMarketplaceCategory = 'All';
+
+  SocialProvider({ApiClient? apiClient, StorageService? storageService})
+      : _apiClient = apiClient ?? ApiClient(),
+        _storageService = storageService ?? StorageService();
 
   List<Post> get posts {
     List<Post> filtered = List.from(_posts);
@@ -41,6 +52,10 @@ class SocialProvider with ChangeNotifier {
   List<EventModel> get events => _events;
   String get activeFeedTab => _activeFeedTab;
   String get searchQuery => _searchQuery;
+  Set<String> get sentFriendRequestUserIds => _sentFriendRequestUserIds;
+  bool isFriendRequestSent(String userId) => _sentFriendRequestUserIds.contains(userId);
+  List<Post> get savedPosts => _posts.where((p) => p.isSaved).toList();
+  bool isPostSaved(String postId) => _posts.any((p) => p.id == postId && p.isSaved);
 
   void setFeedTab(String tab) {
     _activeFeedTab = tab;
@@ -58,9 +73,20 @@ class SocialProvider with ChangeNotifier {
   }
 
   // --- Post Creation & Controls ---
-  void addPost(Post newPost) {
+  Future<void> addPost(Post newPost) async {
     _posts.insert(0, newPost);
     notifyListeners();
+
+    // Async sync with Django API
+    try {
+      await _apiClient.post('posts/', body: {
+        'content': newPost.content,
+        'privacy': newPost.privacy,
+        'feeling': newPost.feeling,
+        'location': newPost.locationCheckIn,
+        'media_urls': newPost.mediaUrls,
+      });
+    } catch (_) {}
   }
 
   void votePoll(String postId, String optionId, String userId) {
@@ -78,6 +104,10 @@ class SocialProvider with ChangeNotifier {
       final updatedPoll = poll.copyWith(options: updatedOptions, totalVotes: poll.totalVotes + 1);
       _posts[index] = _posts[index].copyWith(poll: updatedPoll);
       notifyListeners();
+
+      try {
+        _apiClient.post('posts/$postId/poll/vote/', body: {'option_id': optionId});
+      } catch (_) {}
     }
   }
 
@@ -101,6 +131,10 @@ class SocialProvider with ChangeNotifier {
         _posts[index] = post.copyWith(userReaction: reactionType, reactionCounts: newCounts);
       }
       notifyListeners();
+
+      try {
+        _apiClient.post('reactions/', body: {'post_id': postId, 'reaction_type': reactionType});
+      } catch (_) {}
     }
   }
 
@@ -113,11 +147,17 @@ class SocialProvider with ChangeNotifier {
     }
   }
 
-  void toggleSavePost(String postId) {
+  Future<void> toggleSavePost(String postId) async {
     final index = _posts.indexWhere((p) => p.id == postId);
     if (index != -1) {
       final post = _posts[index];
-      _posts[index] = post.copyWith(isSaved: !post.isSaved);
+      final newSaved = !post.isSaved;
+      _posts[index] = post.copyWith(isSaved: newSaved);
+      if (newSaved) {
+        await _storageService.savePostId(postId);
+      } else {
+        await _storageService.removeSavedPostId(postId);
+      }
       notifyListeners();
     }
   }
@@ -134,6 +174,9 @@ class SocialProvider with ChangeNotifier {
   void deletePost(String postId) {
     _posts.removeWhere((p) => p.id == postId);
     notifyListeners();
+    try {
+      _apiClient.delete('posts/$postId/');
+    } catch (_) {}
   }
 
   void addComment(String postId, Comment comment) {
@@ -142,6 +185,13 @@ class SocialProvider with ChangeNotifier {
       final updatedComments = List<Comment>.from(_posts[index].comments)..add(comment);
       _posts[index] = _posts[index].copyWith(comments: updatedComments);
       notifyListeners();
+
+      try {
+        _apiClient.post('comments/', body: {
+          'post_id': postId,
+          'content': comment.content,
+        });
+      } catch (_) {}
     }
   }
 
@@ -164,6 +214,12 @@ class SocialProvider with ChangeNotifier {
   void addStory(Story story) {
     _stories.insert(0, story);
     notifyListeners();
+    try {
+      _apiClient.post('stories/', body: {
+        'image_url': story.imageUrl,
+        'text_content': story.textContent,
+      });
+    } catch (_) {}
   }
 
   void recordStoryView(String storyId, StoryViewer viewer) {
@@ -190,10 +246,56 @@ class SocialProvider with ChangeNotifier {
     }
   }
 
+  // --- Friend Actions ---
+  void sendFriendRequest(String targetUserId, AuthProvider auth) {
+    _sentFriendRequestUserIds.add(targetUserId);
+    notifyListeners();
+
+    try {
+      _apiClient.post('friends/request/', body: {'target_user_id': targetUserId});
+    } catch (_) {}
+  }
+
+  void acceptFriendRequest(String fromUserId, AuthProvider auth) {
+    if (auth.currentUser != null) {
+      final updatedFriendIds = List<String>.from(auth.currentUser!.friendIds);
+      if (!updatedFriendIds.contains(fromUserId)) {
+        updatedFriendIds.add(fromUserId);
+        auth.updateProfile(auth.currentUser!.copyWith(friendIds: updatedFriendIds));
+      }
+    }
+    notifyListeners();
+
+    try {
+      _apiClient.post('friends/accept/', body: {'user_id': fromUserId});
+    } catch (_) {}
+  }
+
+  void removeFriend(String friendId, AuthProvider auth) {
+    if (auth.currentUser != null) {
+      final updatedFriendIds = List<String>.from(auth.currentUser!.friendIds)..remove(friendId);
+      auth.updateProfile(auth.currentUser!.copyWith(friendIds: updatedFriendIds));
+    }
+    notifyListeners();
+
+    try {
+      _apiClient.post('friends/remove/', body: {'user_id': friendId});
+    } catch (_) {}
+  }
+
   // --- Marketplace & Social Actions ---
   void addMarketplaceItem(MarketplaceItem item) {
     _marketplaceItems.insert(0, item);
     notifyListeners();
+    try {
+      _apiClient.post('marketplace/', body: {
+        'title': item.title,
+        'price': item.price,
+        'category': item.category,
+        'description': item.description,
+        'image_url': item.imageUrl,
+      });
+    } catch (_) {}
   }
 
   void toggleGroupMembership(String groupId) {
@@ -205,6 +307,9 @@ class SocialProvider with ChangeNotifier {
         memberCount: g.isJoined ? g.memberCount - 1 : g.memberCount + 1,
       );
       notifyListeners();
+      try {
+        _apiClient.post('groups/$groupId/membership/');
+      } catch (_) {}
     }
   }
 
@@ -214,6 +319,9 @@ class SocialProvider with ChangeNotifier {
       final e = _events[index];
       _events[index] = e.copyWith(rsvpStatus: status);
       notifyListeners();
+      try {
+        _apiClient.post('events/$eventId/rsvp/', body: {'status': status});
+      } catch (_) {}
     }
   }
 }

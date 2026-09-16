@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../models/post_model.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/admin_provider.dart';
 import 'comment_sheet.dart';
 
 class PostCard extends StatefulWidget {
@@ -96,6 +98,11 @@ class _PostCardState extends State<PostCard> {
                 title: const Text('Report Post'),
                 onTap: () {
                   Navigator.pop(ctx);
+                  context.read<AdminProvider>().reportPost(
+                    postId: widget.post.id,
+                    reason: 'Inappropriate content',
+                    reporterName: auth.currentUser?.name ?? 'User',
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Report submitted to KC App moderation team.')),
                   );
@@ -115,7 +122,7 @@ class _PostCardState extends State<PostCard> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: Row(
@@ -147,7 +154,7 @@ class _PostCardState extends State<PostCard> {
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark ? AppColors.darkBackground : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +198,7 @@ class _PostCardState extends State<PostCard> {
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isVoted ? AppColors.primary.withOpacity(0.25) : AppColors.secondary.withOpacity(0.15),
+                          color: isVoted ? AppColors.primary.withValues(alpha: 0.25) : AppColors.secondary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
@@ -268,9 +275,10 @@ class _PostCardState extends State<PostCard> {
                 // Post Header: Avatar, Name, Time, Menu
                 Row(
                   children: [
-                    CircleAvatar(
+                    SafeAvatar(
                       radius: 22,
-                      backgroundImage: NetworkImage(post.authorAvatar),
+                      imageUrl: post.authorAvatar,
+                      name: post.authorName,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -326,14 +334,12 @@ class _PostCardState extends State<PostCard> {
                 // Media Gallery / Grid
                 if (post.mediaUrls.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  ClipRRect(
+                  SafeNetworkImage(
+                    imageUrl: post.mediaUrls.first,
+                    width: double.infinity,
+                    height: 220,
+                    fit: BoxFit.cover,
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      post.mediaUrls.first,
-                      width: double.infinity,
-                      height: 220,
-                      fit: BoxFit.cover,
-                    ),
                   ),
                 ],
 
@@ -355,7 +361,7 @@ class _PostCardState extends State<PostCard> {
                       children: [
                         Row(
                           children: [
-                            CircleAvatar(radius: 14, backgroundImage: NetworkImage(post.originalPost!.authorAvatar)),
+                            SafeAvatar(radius: 14, imageUrl: post.originalPost!.authorAvatar, name: post.originalPost!.authorName),
                             const SizedBox(width: 8),
                             Text(post.originalPost!.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
                           ],

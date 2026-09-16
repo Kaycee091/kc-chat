@@ -26,7 +26,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController(text: '2000-05-15');
   final _confirmPasswordController = TextEditingController();
-  String _selectedGender = 'Rather not say';
+  final String _selectedGender = 'Rather not say';
 
   final _otpController = TextEditingController();
 
@@ -34,6 +34,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
     final success = await auth.signIn(_identifierController.text, _passwordController.text, _rememberMe);
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success && auth.is2FAPending) {
@@ -42,6 +43,9 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _show2FAVerificationDialog() {
+    final authProvider = context.read<AuthProvider>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -75,17 +79,19 @@ class _AuthScreenState extends State<AuthScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<AuthProvider>().signOut();
+              authProvider.signOut();
             },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
-              final ok = await context.read<AuthProvider>().verify2FA(_otpController.text);
+              final navigator = Navigator.of(ctx);
+              final ok = await authProvider.verify2FA(_otpController.text);
+              if (!ctx.mounted) return;
               if (ok) {
-                Navigator.pop(ctx);
+                navigator.pop();
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('Invalid 2FA code. Try 123456')),
                 );
               }
@@ -109,6 +115,13 @@ class _AuthScreenState extends State<AuthScreen> {
       );
       return;
     }
+    if (_confirmPasswordController.text.isNotEmpty &&
+        _confirmPasswordController.text != _passwordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match. Please re-enter.')),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
     final success = await auth.register(
@@ -120,6 +133,7 @@ class _AuthScreenState extends State<AuthScreen> {
       gender: _selectedGender,
       password: _passwordController.text,
     );
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
@@ -214,7 +228,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
+                        color: AppColors.primary.withValues(alpha: 0.4),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -394,6 +408,16 @@ class _AuthScreenState extends State<AuthScreen> {
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
                               labelText: 'Password',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _confirmPasswordController,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Confirm Password',
                               prefixIcon: const Icon(Icons.lock_outline),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             ),

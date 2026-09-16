@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../providers/social_provider.dart';
 
 class GroupsScreen extends StatelessWidget {
@@ -24,9 +25,12 @@ class GroupsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
+                SafeNetworkImage(
+                  imageUrl: group.coverUrl,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  child: Image.network(group.coverUrl, height: 140, width: double.infinity, fit: BoxFit.cover),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -41,7 +45,7 @@ class GroupsScreen extends StatelessWidget {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                            decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                             child: Text(group.privacy, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],

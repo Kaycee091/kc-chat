@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../models/story_model.dart';
-import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/messenger_provider.dart';
@@ -33,7 +33,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
         }
       });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final social = context.read<SocialProvider>();
       final user = auth.currentUser!;
@@ -64,7 +64,12 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
   void _sendStoryReply() {
     if (_replyController.text.isEmpty) return;
     final messenger = context.read<MessengerProvider>();
-    messenger.sendMessage('conv_1', 'Replied to story: ${_replyController.text}');
+    final conv = messenger.openConversationWithUser(
+      widget.story.authorId,
+      widget.story.authorName,
+      widget.story.authorAvatar,
+    );
+    messenger.sendMessage(conv.id, 'Replied to story: ${_replyController.text}');
     _replyController.clear();
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -86,7 +91,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
             // Story Content
             Center(
               child: story.imageUrl != null
-                  ? Image.network(story.imageUrl!, fit: BoxFit.contain, width: double.infinity, height: double.infinity)
+                  ? SafeNetworkImage(imageUrl: story.imageUrl!, fit: BoxFit.contain, width: double.infinity, height: double.infinity)
                   : Container(
                       padding: const EdgeInsets.all(32),
                       decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
@@ -120,7 +125,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      CircleAvatar(radius: 20, backgroundImage: NetworkImage(story.authorAvatar)),
+                      SafeAvatar(radius: 20, imageUrl: story.authorAvatar, name: story.authorName),
                       const SizedBox(width: 10),
                       Text(
                         story.authorName,
@@ -153,7 +158,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -217,7 +222,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
             if (_showViewersDrawer)
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.9),
+                  color: Colors.black.withValues(alpha: 0.9),
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
@@ -241,7 +246,7 @@ class _StoryViewerModalState extends State<StoryViewerModal> with SingleTickerPr
                           itemBuilder: (ctx, idx) {
                             final v = story.viewers[idx];
                             return ListTile(
-                              leading: CircleAvatar(backgroundImage: NetworkImage(v.userAvatar)),
+                              leading: SafeAvatar(imageUrl: v.userAvatar, name: v.userName),
                               title: Text(v.userName, style: const TextStyle(color: Colors.white)),
                               subtitle: Text(v.viewedAt, style: const TextStyle(color: Colors.white54)),
                             );

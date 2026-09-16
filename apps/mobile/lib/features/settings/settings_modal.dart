@@ -13,6 +13,8 @@ class SettingsModal extends StatefulWidget {
 
 class _SettingsModalState extends State<SettingsModal> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _pushEnabled = true;
+  bool _emailDigestEnabled = true;
 
   @override
   void initState() {
@@ -158,13 +160,13 @@ class _SettingsModalState extends State<SettingsModal> with SingleTickerProvider
                     SwitchListTile(
                       title: const Text('Show Online Presence'),
                       value: user.onlineStatusEnabled,
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                       onChanged: (v) => auth.updateProfile(user.copyWith(onlineStatusEnabled: v)),
                     ),
                     SwitchListTile(
                       title: const Text('Read Receipts'),
                       value: user.readReceiptsEnabled,
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                       onChanged: (v) => auth.updateProfile(user.copyWith(readReceiptsEnabled: v)),
                     ),
                   ],
@@ -173,8 +175,18 @@ class _SettingsModalState extends State<SettingsModal> with SingleTickerProvider
                 // 3. Notifications Tab
                 ListView(
                   children: [
-                    SwitchListTile(title: const Text('Push Notifications'), value: true, activeColor: AppColors.primary, onChanged: (_) {}),
-                    SwitchListTile(title: const Text('Email Digest Notifications'), value: true, activeColor: AppColors.primary, onChanged: (_) {}),
+                    SwitchListTile(
+                      title: const Text('Push Notifications'),
+                      value: _pushEnabled,
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (v) => setState(() => _pushEnabled = v),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Email Digest Notifications'),
+                      value: _emailDigestEnabled,
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (v) => setState(() => _emailDigestEnabled = v),
+                    ),
                   ],
                 ),
 
@@ -185,7 +197,7 @@ class _SettingsModalState extends State<SettingsModal> with SingleTickerProvider
                       title: const Text('Two-Factor Authentication (2FA)'),
                       subtitle: const Text('Require 6-digit OTP code on sign in'),
                       value: user.is2FAEnabled,
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                       onChanged: (v) => auth.toggle2FA(v),
                     ),
                     const Divider(),
@@ -225,23 +237,27 @@ class _SettingsModalState extends State<SettingsModal> with SingleTickerProvider
                 // 6. Appearance Tab
                 ListView(
                   children: [
-                    RadioListTile<ThemeModeOption>(
-                      title: const Text('Light Mode ☀️'),
-                      value: ThemeModeOption.light,
+                    RadioGroup<ThemeModeOption>(
                       groupValue: themeProvider.themeModeOption,
-                      onChanged: (v) => themeProvider.setThemeMode(v!),
-                    ),
-                    RadioListTile<ThemeModeOption>(
-                      title: const Text('Dark Mode 🌙 (Midnight Slate)'),
-                      value: ThemeModeOption.dark,
-                      groupValue: themeProvider.themeModeOption,
-                      onChanged: (v) => themeProvider.setThemeMode(v!),
-                    ),
-                    RadioListTile<ThemeModeOption>(
-                      title: const Text('System Auto Match ⚙️'),
-                      value: ThemeModeOption.system,
-                      groupValue: themeProvider.themeModeOption,
-                      onChanged: (v) => themeProvider.setThemeMode(v!),
+                      onChanged: (v) {
+                        if (v != null) themeProvider.setThemeMode(v);
+                      },
+                      child: const Column(
+                        children: [
+                          RadioListTile<ThemeModeOption>(
+                            title: Text('Light Mode ☀️'),
+                            value: ThemeModeOption.light,
+                          ),
+                          RadioListTile<ThemeModeOption>(
+                            title: Text('Dark Mode 🌙 (Midnight Slate)'),
+                            value: ThemeModeOption.dark,
+                          ),
+                          RadioListTile<ThemeModeOption>(
+                            title: Text('System Auto Match ⚙️'),
+                            value: ThemeModeOption.system,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/mock_data.dart';
+import '../../../core/widgets/safe_image.dart';
+import '../../profile/profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -43,6 +45,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final matchingUsers = MockData.users.where((u) => u.name.toLowerCase().contains(query)).toList();
     final matchingPosts = MockData.initialPosts.where((p) => p.content.toLowerCase().contains(query)).toList();
+    final matchingGroups = MockData.initialGroups.where((g) => g.name.toLowerCase().contains(query)).toList();
+    final matchingItems = MockData.initialMarketplaceItems.where((m) => m.title.toLowerCase().contains(query)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -97,7 +101,13 @@ class _SearchScreenState extends State<SearchScreen> {
           Expanded(
             child: query.isEmpty
                 ? _buildRecentSearches(theme)
-                : _buildSearchResults(theme, matchingUsers, matchingPosts),
+                : _buildSearchResults(
+                    theme,
+                    matchingUsers,
+                    matchingPosts,
+                    matchingGroups,
+                    matchingItems,
+                  ),
           ),
         ],
       ),
@@ -136,40 +146,85 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSearchResults(ThemeData theme, List matchingUsers, List matchingPosts) {
+  Widget _buildSearchResults(
+    ThemeData theme,
+    List matchingUsers,
+    List matchingPosts,
+    List matchingGroups,
+    List matchingItems,
+  ) {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
         if (_activeCategory == 'All' || _activeCategory == 'People') ...[
-          const Text('People', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          ...matchingUsers.map((u) => ListTile(
-                leading: CircleAvatar(backgroundImage: NetworkImage(u.avatarUrl)),
-                title: Text(u.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('@${u.username} • ${u.mutualFriendsCount} mutual friends'),
-                trailing: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          if (matchingUsers.isNotEmpty) ...[
+            const Text('People', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ...matchingUsers.map((u) => ListTile(
+                  leading: SafeAvatar(imageUrl: u.avatarUrl, name: u.name),
+                  title: Text(u.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('@${u.username} • ${u.mutualFriendsCount} mutual friends'),
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => ProfileScreen(targetUser: u)),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('View Profile'),
                   ),
-                  child: const Text('View Profile'),
-                ),
-              )),
-          const SizedBox(height: 16),
+                )),
+            const SizedBox(height: 16),
+          ],
         ],
         if (_activeCategory == 'All' || _activeCategory == 'Posts') ...[
-          const Text('Posts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          ...matchingPosts.map((p) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: CircleAvatar(backgroundImage: NetworkImage(p.authorAvatar)),
-                  title: Text(p.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(p.content, maxLines: 2, overflow: TextOverflow.ellipsis),
-                ),
-              )),
+          if (matchingPosts.isNotEmpty) ...[
+            const Text('Posts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ...matchingPosts.map((p) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: SafeAvatar(imageUrl: p.authorAvatar, name: p.authorName),
+                    title: Text(p.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(p.content, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ),
+                )),
+            const SizedBox(height: 16),
+          ],
+        ],
+        if (_activeCategory == 'All' || _activeCategory == 'Groups') ...[
+          if (matchingGroups.isNotEmpty) ...[
+            const Text('Groups', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ...matchingGroups.map((g) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: SafeAvatar(imageUrl: g.coverUrl, name: g.name),
+                    title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('${g.memberCount} members • ${g.privacy}'),
+                  ),
+                )),
+            const SizedBox(height: 16),
+          ],
+        ],
+        if (_activeCategory == 'All' || _activeCategory == 'Marketplace') ...[
+          if (matchingItems.isNotEmpty) ...[
+            const Text('Marketplace', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ...matchingItems.map((m) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: SafeAvatar(imageUrl: m.imageUrl, name: m.title),
+                    title: Text(m.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('\$${m.price.toStringAsFixed(0)} • ${m.location}'),
+                  ),
+                )),
+          ],
         ],
       ],
     );

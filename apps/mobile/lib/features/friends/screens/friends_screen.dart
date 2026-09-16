@@ -4,6 +4,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/mock_data.dart';
 import '../../../models/user_model.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/social_provider.dart';
+import '../../../providers/messenger_provider.dart';
+import '../../profile/profile_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -19,6 +22,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       id: 'req_1',
       name: 'David Miller',
       username: 'davidm',
+      email: '',
+      coverUrl: '',
       avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
       mutualFriendsCount: 14,
     ),
@@ -26,6 +31,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       id: 'req_2',
       name: 'Jessica Taylor',
       username: 'jessicat',
+      email: '',
+      coverUrl: '',
       avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format&fit=crop&q=80',
       mutualFriendsCount: 6,
     ),
@@ -36,6 +43,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       id: 'sug_1',
       name: 'Michael Brown',
       username: 'michaelb',
+      email: '',
+      coverUrl: '',
       avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80',
       mutualFriendsCount: 12,
     ),
@@ -43,6 +52,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       id: 'sug_2',
       name: 'Emma Watson',
       username: 'emmaw',
+      email: '',
+      coverUrl: '',
       avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
       mutualFriendsCount: 9,
     ),
@@ -50,6 +61,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       id: 'sug_3',
       name: 'Daniel Craig',
       username: 'danielc',
+      email: '',
+      coverUrl: '',
       avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
       mutualFriendsCount: 3,
     ),
@@ -71,6 +84,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     setState(() {
       _friendRequests.removeWhere((r) => r.id == user.id);
     });
+    context.read<SocialProvider>().acceptFriendRequest(user.id, context.read<AuthProvider>());
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Accepted friend request from ${user.name}')),
     );
@@ -89,6 +103,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     setState(() {
       _suggestions.removeWhere((s) => s.id == user.id);
     });
+    context.read<SocialProvider>().sendFriendRequest(user.id, context.read<AuthProvider>());
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Friend request sent to ${user.name}')),
     );
@@ -298,9 +313,54 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             ),
             title: Text(friend.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('@${friend.username} • ${friend.mutualFriendsCount} mutuals'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(targetUser: friend)));
+            },
             trailing: IconButton(
               icon: const Icon(Icons.more_horiz),
-              onPressed: () {},
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (ctx) => SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+                          title: const Text('Send Message'),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.read<MessengerProvider>().openConversationWithUser(
+                              friend.id,
+                              friend.name,
+                              friend.avatarUrl,
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.person_outline),
+                          title: const Text('View Profile'),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(targetUser: friend)));
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.person_remove_outlined, color: AppColors.destructive),
+                          title: const Text('Remove Friend', style: TextStyle(color: AppColors.destructive)),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.read<SocialProvider>().removeFriend(friend.id, context.read<AuthProvider>());
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Removed ${friend.name} from friends.')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         );
@@ -313,7 +373,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: AppColors.secondary.withOpacity(0.1),
+          color: AppColors.secondary.withValues(alpha: 0.1),
           child: const Padding(
             padding: EdgeInsets.all(16),
             child: Row(

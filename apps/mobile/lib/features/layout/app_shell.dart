@@ -20,6 +20,7 @@ import '../admin/admin_screen.dart';
 import '../messenger/full_messenger_screen.dart';
 import '../messenger/messenger_dock.dart';
 import '../settings/settings_modal.dart';
+import '../saved/screens/saved_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -51,7 +52,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final messenger = context.watch<MessengerProvider>();
     final unreadMessagesCount = messenger.totalUnreadCount;
@@ -226,9 +226,7 @@ class _AppShellState extends State<AppShell> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MemoriesScreen()));
               }),
               _buildMenuTile(context, 'Saved Items', Icons.bookmark_rounded, Colors.teal, () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Opening Saved Items collection...')),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedScreen()));
               }),
               if (isAdmin)
                 _buildMenuTile(context, 'Admin Console', Icons.admin_panel_settings_rounded, AppColors.destructive, () {
@@ -270,7 +268,7 @@ class _AppShellState extends State<AppShell> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 22),

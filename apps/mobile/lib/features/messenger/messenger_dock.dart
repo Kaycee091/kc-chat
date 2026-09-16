@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../providers/messenger_provider.dart';
 import 'floating_chat_window.dart';
 
@@ -44,15 +45,16 @@ class MessengerDock extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
+                        child: SafeAvatar(
                           radius: 26,
-                          backgroundImage: NetworkImage(conv.participantAvatars.last),
+                          imageUrl: conv.participantAvatars.isNotEmpty ? conv.participantAvatars.last : '',
+                          name: conv.groupName ?? (conv.participantNames.isNotEmpty ? conv.participantNames.first : 'Chat'),
                         ),
                       ),
                       if (conv.isOnline)
