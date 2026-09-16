@@ -51,7 +51,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final messenger = context.watch<MessengerProvider>();
     final unreadMessagesCount = messenger.totalUnreadCount;

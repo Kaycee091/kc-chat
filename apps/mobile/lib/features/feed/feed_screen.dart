@@ -272,7 +272,7 @@ class FeedScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
+                );
               },
             ),
           ),

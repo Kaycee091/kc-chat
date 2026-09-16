@@ -15,6 +15,7 @@ class MessengerProvider with ChangeNotifier {
   List<Conversation> get conversations => _conversations;
   List<String> get openChatHeadIds => _openChatHeadIds;
   String? get activeChatWindowId => _activeChatWindowId;
+  int get totalUnreadCount => _conversations.fold(0, (sum, c) => sum + c.unreadCount);
 
   List<Message> getMessagesForConversation(String convId) {
     return _messagesMap[convId] ?? [];
