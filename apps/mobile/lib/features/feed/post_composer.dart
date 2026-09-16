@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../models/post_model.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -124,7 +125,7 @@ class _PostComposerState extends State<PostComposer> {
           // User Header & Privacy Picker
           Row(
             children: [
-              CircleAvatar(radius: 22, backgroundImage: NetworkImage(user.avatarUrl)),
+              SafeAvatar(radius: 22, imageUrl: user.avatarUrl, name: user.name),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,9 +175,12 @@ class _PostComposerState extends State<PostComposer> {
                   if (_mediaUrl != null)
                     Stack(
                       children: [
-                        ClipRRect(
+                        SafeNetworkImage(
+                          imageUrl: _mediaUrl!,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(_mediaUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
                         ),
                         Positioned(
                           right: 8,
@@ -198,7 +202,7 @@ class _PostComposerState extends State<PostComposer> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.08),
+                        color: Colors.blue.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.primary),
                       ),

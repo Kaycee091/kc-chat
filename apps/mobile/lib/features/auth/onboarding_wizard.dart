@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/social_provider.dart';
 
 class OnboardingWizard extends StatefulWidget {
   final VoidCallback onCompleted;
@@ -14,6 +18,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   int _currentStep = 0;
   final _bioController = TextEditingController(text: 'Excited to be on KC App!');
   final _locationController = TextEditingController(text: 'San Francisco, CA');
+  final Set<String> _followedCreators = {};
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +79,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                     const SizedBox(height: 32),
                     Stack(
                       children: [
-                        CircleAvatar(
+                        const SafeAvatar(
                           radius: 50,
-                          backgroundColor: Colors.grey.shade300,
-                          backgroundImage: const NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'),
+                          imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+                          name: 'New User',
                         ),
                         Positioned(
                           bottom: 0,
@@ -87,7 +92,11 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             radius: 18,
                             child: IconButton(
                               icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                              onPressed: () {},
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Avatar image updated from camera / gallery! 📷')),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -141,23 +150,59 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                     const Text('Connect with popular creators and friends on KC App.', textAlign: TextAlign.center),
                     const SizedBox(height: 24),
                     ListTile(
-                      leading: const CircleAvatar(backgroundImage: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400')),
+                      leading: const SafeAvatar(
+                        radius: 20,
+                        imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+                        name: 'Sophia Martinez',
+                      ),
                       title: const Text('Sophia Martinez'),
                       subtitle: const Text('UI/UX Designer'),
                       trailing: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                        child: const Text('Follow'),
+                        onPressed: () {
+                          final auth = context.read<AuthProvider>();
+                          final social = context.read<SocialProvider>();
+                          setState(() {
+                            if (_followedCreators.contains('user_2')) {
+                              _followedCreators.remove('user_2');
+                            } else {
+                              _followedCreators.add('user_2');
+                              social.sendFriendRequest('user_2', auth);
+                            }
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _followedCreators.contains('user_2') ? Colors.grey.shade400 : AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(_followedCreators.contains('user_2') ? 'Following' : 'Follow'),
                       ),
                     ),
                     ListTile(
-                      leading: const CircleAvatar(backgroundImage: NetworkImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400')),
+                      leading: const SafeAvatar(
+                        radius: 20,
+                        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+                        name: 'Marcus Chen',
+                      ),
                       title: const Text('Marcus Chen'),
                       subtitle: const Text('Mobile Developer'),
                       trailing: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                        child: const Text('Follow'),
+                        onPressed: () {
+                          final auth = context.read<AuthProvider>();
+                          final social = context.read<SocialProvider>();
+                          setState(() {
+                            if (_followedCreators.contains('user_3')) {
+                              _followedCreators.remove('user_3');
+                            } else {
+                              _followedCreators.add('user_3');
+                              social.sendFriendRequest('user_3', auth);
+                            }
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _followedCreators.contains('user_3') ? Colors.grey.shade400 : AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(_followedCreators.contains('user_3') ? 'Following' : 'Follow'),
                       ),
                     ),
                   ],
@@ -182,6 +227,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                   if (_currentStep < 2) {
                     setState(() => _currentStep++);
                   } else {
+                    final auth = context.read<AuthProvider>();
+                    final user = auth.currentUser;
+                    if (user != null) {
+                      auth.updateProfile(user.copyWith(
+                        bio: _bioController.text,
+                        location: _locationController.text,
+                      ));
+                    }
                     widget.onCompleted();
                   }
                 },

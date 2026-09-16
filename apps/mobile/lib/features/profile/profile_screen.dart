@@ -175,27 +175,45 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                           ),
                         )
-                      else
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {},
-                                icon: const Icon(Icons.person_add),
-                                label: const Text('Add Friend'),
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => messenger.openChatHead('conv_1'),
-                                icon: const Icon(Icons.chat_bubble_outline),
-                                label: const Text('Message'),
-                              ),
-                            ),
-                          ],
+                      else ...[
+                        Builder(
+                          builder: (context) {
+                            final isFriend = auth.currentUser?.friendIds.contains(user.id) ?? false;
+                            final isRequested = social.sentFriendRequestUserIds.contains(user.id);
+
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: isFriend || isRequested
+                                        ? null
+                                        : () {
+                                            social.sendFriendRequest(user.id, auth);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Friend request sent to ${user.name}!')),
+                                            );
+                                          },
+                                    icon: Icon(isFriend ? Icons.check : (isRequested ? Icons.hourglass_top : Icons.person_add)),
+                                    label: Text(isFriend ? 'Friends' : (isRequested ? 'Request Sent' : 'Add Friend')),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: isFriend || isRequested ? Colors.grey : AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => messenger.openConversationWithUser(user.id, user.name, user.avatarUrl),
+                                    icon: const Icon(Icons.chat_bubble_outline),
+                                    label: const Text('Message'),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
+                      ],
                     ],
                   ),
                 ),

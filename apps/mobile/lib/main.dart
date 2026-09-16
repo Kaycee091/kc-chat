@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
@@ -11,6 +12,15 @@ import 'features/layout/app_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Allow runtime fetching with standard system fallback
+  GoogleFonts.config.allowRuntimeFetching = true;
+
+  // Surface any framework errors to the console
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+  };
+
   runApp(
     MultiProvider(
       providers: [

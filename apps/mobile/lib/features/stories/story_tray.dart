@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../models/story_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/social_provider.dart';
@@ -50,32 +51,30 @@ class StoryTray extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Stack(
                   children: [
-                    ClipRRect(
+                    SafeNetworkImage(
+                      imageUrl: currentUser.avatarUrl,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: Image.network(
-                        currentUser.avatarUrl,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
                     ),
-                    Positioned(
+                    const Positioned(
                       bottom: 8,
                       left: 0,
                       right: 0,
                       child: Column(
                         children: [
-                          const CircleAvatar(
+                          CircleAvatar(
                             radius: 16,
                             backgroundColor: AppColors.primary,
                             child: Icon(Icons.add, color: Colors.white, size: 20),
                           ),
-                          const SizedBox(height: 4),
-                          const Text('Add Story', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          SizedBox(height: 4),
+                          Text('Add Story', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                         ],
                       ),
                     ),
@@ -104,9 +103,12 @@ class StoryTray extends StatelessWidget {
                 child: Stack(
                   children: [
                     if (story.imageUrl != null)
-                      ClipRRect(
+                      SafeNetworkImage(
+                        imageUrl: story.imageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
                         borderRadius: BorderRadius.circular(18),
-                        child: Image.network(story.imageUrl!, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
                       )
                     else
                       Container(
@@ -126,9 +128,10 @@ class StoryTray extends StatelessWidget {
                     Positioned(
                       top: 8,
                       left: 8,
-                      child: CircleAvatar(
+                      child: SafeAvatar(
                         radius: 16,
-                        backgroundImage: NetworkImage(story.authorAvatar),
+                        imageUrl: story.authorAvatar,
+                        name: story.authorName,
                       ),
                     ),
                     Positioned(

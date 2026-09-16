@@ -45,13 +45,15 @@ class _EmailVerifyModalState extends State<EmailVerifyModal> {
   void _verifyCode() async {
     setState(() => _isLoading = true);
     final auth = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final success = await auth.verifyEmailCode(_codeController.text);
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
       widget.onVerified();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Invalid verification code! Use code 123456 for testing.')),
       );
     }

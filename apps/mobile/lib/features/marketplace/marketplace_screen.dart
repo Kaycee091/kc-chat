@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../models/marketplace_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/social_provider.dart';
 import '../../providers/messenger_provider.dart';
 
@@ -30,11 +32,13 @@ class MarketplaceScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               if (titleCtrl.text.isNotEmpty) {
+                final auth = context.read<AuthProvider>();
+                final currentUser = auth.currentUser;
                 final item = MarketplaceItem(
                   id: 'item_${DateTime.now().millisecondsSinceEpoch}',
-                  sellerId: 'user_1',
-                  sellerName: 'Alex Johnson',
-                  sellerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+                  sellerId: currentUser?.id ?? 'user_1',
+                  sellerName: currentUser?.name ?? 'Alex Johnson',
+                  sellerAvatar: currentUser?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
                   title: titleCtrl.text,
                   price: double.tryParse(priceCtrl.text) ?? 100.0,
                   category: 'Electronics',
@@ -108,7 +112,12 @@ class MarketplaceScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Image.network(item.imageUrl, width: double.infinity, fit: BoxFit.cover),
+                        child: SafeNetworkImage(
+                          imageUrl: item.imageUrl,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(8),
@@ -130,7 +139,14 @@ class MarketplaceScreen extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () => messenger.openChatHead('conv_1'),
+                                onPressed: () {
+                                  final conv = messenger.openConversationWithUser(
+                                    item.sellerId,
+                                    item.sellerName,
+                                    item.sellerAvatar,
+                                  );
+                                  messenger.openChatHead(conv.id);
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,

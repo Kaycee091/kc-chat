@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Connecta requires camera access to take photos and videos for posts and stories.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Connecta requires photo library access to upload avatars, covers, and post media.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Connecta requires microphone access for voice messages and video capture.</string>
 </dict>
 </plist>

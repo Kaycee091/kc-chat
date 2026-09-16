@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/mock_data.dart';
+import '../../core/widgets/safe_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/social_provider.dart';
 import '../stories/story_tray.dart';
@@ -73,7 +74,7 @@ class FeedScreen extends StatelessWidget {
                       onTap: () => _openComposer(context),
                       child: Row(
                         children: [
-                          CircleAvatar(radius: 20, backgroundImage: NetworkImage(currentUser.avatarUrl)),
+                          SafeAvatar(radius: 20, imageUrl: currentUser.avatarUrl, name: currentUser.name),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Container(
@@ -203,7 +204,9 @@ class FeedScreen extends StatelessWidget {
 
   Widget _buildPeopleYouMayKnowSection(BuildContext context) {
     final theme = Theme.of(context);
-    final suggestions = MockData.users.where((u) => u.id != MockData.currentUser.id).toList();
+    final auth = context.watch<AuthProvider>();
+    final social = context.watch<SocialProvider>();
+    final suggestions = MockData.users.where((u) => u.id != auth.currentUser?.id).toList();
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -211,7 +214,7 @@ class FeedScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,6 +239,7 @@ class FeedScreen extends StatelessWidget {
               itemCount: suggestions.length,
               itemBuilder: (ctx, idx) {
                 final user = suggestions[idx];
+                final isSent = social.isFriendRequestSent(user.id);
                 return Container(
                   width: 120,
                   margin: const EdgeInsets.only(right: 10),
@@ -247,7 +251,7 @@ class FeedScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      CircleAvatar(radius: 28, backgroundImage: NetworkImage(user.avatarUrl)),
+                      SafeAvatar(radius: 28, imageUrl: user.avatarUrl, name: user.name),
                       const SizedBox(height: 6),
                       Text(user.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                       Text('${user.mutualFriendsCount} mutuals', style: const TextStyle(fontSize: 10, color: Colors.grey)),
@@ -257,17 +261,24 @@ class FeedScreen extends StatelessWidget {
                         height: 28,
                         child: ElevatedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Friend request sent to ${user.name}')),
-                            );
+                            if (isSent) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Friend request already sent to ${user.name}')),
+                              );
+                            } else {
+                              social.sendFriendRequest(user.id, auth);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Friend request sent to ${user.name}')),
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: isSent ? Colors.grey.shade400 : AppColors.primary,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.zero,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                           ),
-                          child: const Text('Add Friend', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          child: Text(isSent ? 'Sent' : 'Add Friend', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],

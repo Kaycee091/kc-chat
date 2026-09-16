@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/safe_image.dart';
 
 class NotificationModel {
   final String id;
@@ -154,13 +155,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildNotificationTile(NotificationModel n, ThemeData theme) {
     return Container(
-      color: n.isUnread ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
+      color: n.isUnread ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
       child: ListTile(
         leading: Stack(
           children: [
-            CircleAvatar(
+            SafeAvatar(
               radius: 24,
-              backgroundImage: NetworkImage(n.userAvatar),
+              imageUrl: n.userAvatar,
+              name: n.title,
             ),
             Positioned(
               right: 0,
