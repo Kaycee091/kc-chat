@@ -1,0 +1,10 @@
+{
+  "name": "connecta-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "web:dev": "cd apps/web && bun run dev",
+    "server:dev": "cd server && python manage.py runserver",
+    "mobile:get": "cd apps/mobile && flutter pub get"
+  }
+}

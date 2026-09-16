@@ -1,14 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kc_chat/main.dart';
 import 'package:provider/provider.dart';
+import 'package:kc_chat/main.dart';
 import 'package:kc_chat/providers/theme_provider.dart';
 import 'package:kc_chat/providers/auth_provider.dart';
 import 'package:kc_chat/providers/social_provider.dart';
 import 'package:kc_chat/providers/messenger_provider.dart';
 import 'package:kc_chat/providers/admin_provider.dart';
-
-import 'dart:io';
 import 'package:kc_chat/core/widgets/safe_image.dart';
 
 void main() {
@@ -29,6 +28,8 @@ void main() {
         child: const KCApp(),
       ),
     );
+
+    expect(find.byType(KCApp), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
